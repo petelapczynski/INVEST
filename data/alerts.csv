@@ -1,0 +1,9 @@
+id,symbol,trigger,condition,target,notes
+2c3d9472-37dd-0e60-0b4c-ea21c8e02e17,*,percent,greater,5,"heating up!"
+7b596742-64c4-8837-aeb7-f562b67d088b,*,percent,greater,10,"oh my he's on fire!"
+746847c0-60b6-239f-ed96-2ff257d9dbb5,*,percent,less,-5,sinking
+4714dffa-0dc9-3e3a-1cc4-8cac2b771474,*,percent,less,-10,awwwooooga!
+9e1326dd-6a3e-69b7-c97d-487a9f186878,ALLY,percent,less,-2,"Buy more?"
+ac6a3eb8-cb02-8590-9875-b5fea23551e2,ALLY,date,greater,2024-01-28,"Own It 2 shares are vested!"
+107e1706-7a05-0553-a66d-6b98b77308d6,ALLY,date,greater,2023-01-28,"Own It 1 shares are vested!"
+2063171a-4bb0-3d00-8722-d9d97a5d6f6d,ALLY,lastprice,greater,40,"Get those Gainz!"

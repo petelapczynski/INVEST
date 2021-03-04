@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<head>
+	<title>INVEST!</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width" initial-scale=1 />
+	<link rel="stylesheet" title="main" type="text/css" href="style.css" />
+	<!-- <link rel="stylesheet" type="text/css" href="https://www.w3schools.com/w3css/4/w3.css" /> -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" />
+	<script type="text/javascript" src="javascript.js"></script>
+	<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+	<!-- <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script> -->
+</head>
+
+<body id="body" onload="setupConfiguration();">
+	<div id="main">		
+		<section id="account-totals" class="account-select-totals" >
+			<div class="title"">	
+				<h1>Invest! | Dashboard 
+					<i class="fas fa-sync" id ="account-sync" onclick="toggleGetAccount();"></i>
+				</h1>
+				<div class="account-select" id="account-select">
+					<div class="multiselect" onmouseover="showCheckboxes()" onmouseout="hideCheckboxes()">
+						<div class="selectBox">
+							<select>
+								<option id="multiselect-txt">Select accounts</option>
+							</select>
+						<div class="overSelect"></div>
+						</div>
+						<div id="checkboxes">
+						<!--generated from getProfileData-->
+						</div>
+					</div>
+				</div>
+				
+			</div>
+			
+			<div class="streaming-totals">
+			<section class="info-section">
+				<div class="acc-totals">
+					<h3>Total Account Value</h3>
+					<span>
+						<div class="dollar-amount" id="amtTotalValue"></div>
+					</span>
+				</div>
+				<div class="acc-totals">
+					<h3>Cash Buying Power</h3>
+					<span>
+						<div class="dollar-amount" id="amtCashBuyingPower"></div>
+					</span>
+				</div>
+				<div class="acc-totals">
+					<h3>Today's G/L</h3>
+					<span>
+						<i id="iTodaysGL" class=""></i>
+						<div class="dollar-amount" id="amtTodaysGL"></div>
+					</span>
+				</div>
+				<div class="acc-totals">
+					<h3>Today's %</h3>
+					<span>
+						<i id="iTodaysPCT" class=""></i>
+						<div class="percent-amount" id="amtTodaysPCT"></div>
+					</span>
+				</div>
+				<div class="acc-totals">
+					<h3>Total G/L</h3>
+					<span>
+						<i id="iTotalGL" class=""></i>
+						<div class="dollar-amount" id="amtTotalGL"></div>
+					</span>
+				</div>
+				<div class="acc-totals">
+					<h3>Total ROI</h3>
+					<span>
+						<i id="iROI" class=""></i>
+						<div class="percent-amount" id="amtROI"></div>
+					</span>
+				</div>				
+				<div class="acc-totals">
+					<h3>Message Center</h3>
+					<span>
+						<span class="" id="txtMessage"></span>
+						<span class="watch_symb">SPTM</span>
+						<span id="watch_SPTM"></span>
+					</span>
+				</div>					
+			</section>			  
+			</div>
+		</section >
+	  
+		<section id="account-holdings" class="account-holdings">
+			<table id="holdings-table"></table>
+		</section>
+	  
+		<section id="watch-lists" class="account-holdings"></section>
+
+		<section id="alerts-section">
+			<table id="alerts-table">
+				<thead>
+					<tr>
+						<th>alerts</th>
+						<th>trigger</th>
+						<th>condition</th>
+						<th>target value</th>
+						<th>notes</th>
+						<th> <i class="fas fa-chevron-circle-right tbodyicon icon-left" onclick="toggleTBody(this,'alerts-table');"></i></th>
+					</tr>
+					<tr>
+						<td>
+							<input type="text" id="alert_symbol" name="alert_symbol" placeholder="Symbol or * for All" required=""></td>
+						<td>
+							<select id="alert_trigger" name="alert_trigger" onchange="alertTriggerChange(this,'');">
+								<option value="lastprice">Last Price</option>
+								<option value="percent">Percent Change</option>
+								<option value="gainloss">Gain Loss</option>
+								<option value="gainpercent">Gain Percent</option>
+								<option value="date">Date</option>
+								<option value="trailloss">Trailing Stop Loss</option>
+								<option value="trailpercent">Trailing Percent</option>
+							</select>
+						</td>
+						<td>
+							<select id="alert_condition" name="alert_condition">
+								<option value="greater">Greater (&gt;=)</option>
+								<option value="less">Less (&lt;=)</option>
+							</select>
+						</td>
+						<td>
+							<input type="text" id="alert_target" name="alert_target" placeholder="Target $ or % or date" required="">
+						</td>
+						<td>
+							<input type="text" id="alert_notes" name="alert_notes" placeholder="Notes" required="">
+						</td>
+						<td>
+							<button type="button" class="w3-button w3-large w3-round w3-ripple w3-light-gray" onclick="btnCreateAlert();">Create</button>
+						</td>
+					</tr>
+				
+				</thead>
+				<tbody class="ninja"></tbody>
+			</table>
+		</section>
+	  
+		<!-- External Links -->
+		<div id="external-links" class="w3-container">
+			<div class="box-out"> 
+				<h2>Links</h2>
+				<a href="https://live.invest.ally.com/dashboard" target="_blank">Ally Invest Dashboard</a>
+				<a href="https://robinhood.com/" target="_blank">Robinhood</a>
+				<a href="https://finviz.com/" target="_blank">FINVIZ</a>
+				<a href="https://finance.yahoo.com/" target="_blank">Yahoo Finance</a>
+				<a href="https://marketchameleon.com/stock-market-movers/Stocks-Outperforming-The-Market" target="_blank">Market Chameleon</a>
+			</div>
+		</div>
+		
+		<!-- Settings Configuration -->
+		<div id="config" class="w3-container">
+			<div class="box-out">
+				<h2>Settings Configuration</h2>
+				<div class="w3-container w3-margin-bottom">
+					<h3>Default Chart Interval</h3>
+					<select id="config_chart_int">
+						<option value="1D">1 Day</option>
+						<option value="1M">1 Month</option>
+						<option value="3M">3 Months</option>
+						<option value="1Y">1 Year</option>
+						<option value="5Y">5 Years</option>
+						<option value="ALL">All</option>
+					</select>
+				</div>
+				<div class="w3-container">
+					<h3>Holding Column Layout</h3>
+					<div id="config_holding_columns">
+						<!-- populated by setupConfiguration() -->
+					</div>
+				</div>
+			</div>
+		</div>
+  	
+	<!-- Holding Overview Modal -->
+	<div id="id01" class="w3-modal" style="display: none;">
+		<div class="w3-modal-content w3-animate-opacity w3-card-4">
+			<header class="w3-container w3-teal w3-padding"> 
+				<span onclick="toggleModal('id01');" class="w3-button w3-display-topright" style="font-size: 1.2em;">×</span>
+				<h2 id="id01_title">Holding Summary</h2>
+			</header>
+			<div class="w3-container">
+				<form id="id01_form" class="w3-container form-inline" action="note_add.php" method="post">
+					<input type="hidden" id="id01_holding" name="id01_holding" value="">
+					<br>
+					<div id="id01_chart" style="width:80vw;height:60vh;margin: 1vh auto 1vh auto;"></div>
+					<div class="w3-margin" style="">
+						<label class="w3-text-black">Comments</label>
+						<textarea id="id01_comments" name="id01_comments"></textarea>
+					</div>
+					<table id="analysis-table" class="w3-margin-bottom">
+						<thead>
+							<tr>						
+								<th>200 Day Avg</th>
+								<th>100 Day Avg</th>
+								<th>50 Day Avg</th>
+								<th>Volume Weighted Avg</th>
+								<th>Overall Analysis</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+								<td></td>
+							</tr>
+						</tbody>
+					</table>
+					
+					<table id="id01_alerts-table">
+						<thead>
+							<tr>
+								<th>alerts</th>
+								<th>trigger</th>
+								<th>condition</th>
+								<th>target value</th>
+								<th>notes</th>
+								<th> <i class="fas fa-chevron-circle-down tbodyicon icon-right" onclick="toggleTBody(this,'id01_alerts-table');"></i></th>
+							</tr>
+							<tr>
+								<td></td>
+								<td>
+									<select id="id01_alert_trigger" name="alert_trigger" onchange="alertTriggerChange(this,'id01_');">
+										<option value="lastprice">Last Price</option>
+										<option value="percent">Percent Change</option>
+										<option value="gainloss">Gain Loss</option>
+										<option value="gainpercent">Gain Percent</option>
+										<option value="date">Date</option>
+										<option value="trailloss">Trailing Stop Loss</option>
+										<option value="trailpercent">Trailing Percent</option>
+									</select>
+								</td>
+								<td>
+									<select id="id01_alert_condition" name="alert_condition">
+										<option value="greater">Greater (&gt;=)</option>
+										<option value="less">Less (&lt;=)</option>
+									</select>
+								</td>
+								<td>
+									<input type="text" id="id01_alert_target" name="alert_target" placeholder="Target $ or % or date" required>
+								</td>
+								<td>
+									<input type="text" id="id01_alert_notes" name="alert_notes" placeholder="Notes" required>
+								</td>
+								<td>
+									<button type="button" class="w3-button w3-large w3-round w3-ripple w3-light-gray" onclick="btnCreateModalAlert();">Create</button>
+								</td>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+					<br>
+				</form>
+			</div>
+			<footer class="w3-container w3-teal w3-padding">
+				<button type="button" class="w3-button w3-large w3-round w3-ripple w3-light-gray w3-right w3-margin-left" onclick="btnCloseHoldingModal();">Close</button>
+			</footer>
+		</div>
+	 </div>
+	
+	</div>
+	
+	<!-- Alert Messages --> 
+	<div id="alerts" class="alerts"></div>
+	
+	<!-- Loading Insterstatial -->
+	<div id="processing">
+		<div id="loader"></div>
+	</div>
+	
+	<!-- Attribution  -->
+	<p>Powered by <a href=http://www.ally.com/invest title="Powered by Ally">Ally Invest</a></p>
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+account,symbol,desc,qty,costbasis,comments
+ALLY-ESPP,ALLY,Ally Financial,30,1000,updated 3-1-2021
+ALLY-401K,VIIIX,Vanguard Inst Index Fund,15,5000,updated 3-1-2021
+ALLY-401K,VIEIX,Vanguard Ext Market Index Fund,37,5000,updated 3-1-2021
+Betterment-1234,VTI,Vanguard Total Stock ETF,25,5000,updated 3-1-2021
+Betterment-1234,VXUS,Vanguard Total International Stock ETF,48,3000,updated 3-1-2021
+Betterment-1234,BND,Vanguard Total Bond Market ETF,23.25,2000,updated 3-1-2021
