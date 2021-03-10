@@ -1637,7 +1637,7 @@ function getHoldingQuotes() {
 	let watches = getHoldingSymbols("watch_symb");
 	let symbols = holdings.concat(watches);
 	var holdingString = symbols.join();
-	var fields = "symbol,name,last,chg,chg_sign,pchg,pchg_sign,vwap,adp_50,adp_100,adp_200,div,divfreq,divexdate,divpaydt,iad,yield,wk52hi,wk52lo";
+	var fields = "symbol,name,last,chg,chg_sign,pchg,pchg_sign,vwap,adp_50,adp_100,adp_200,div,divfreq,divexdate,divpaydt,iad,yield,wk52hi,wk52lo,date";
 	fetch("api/get_market_quotes.php", {
 		method: "POST",
 		body: "symbols=" + holdingString + "&fids=" + fields,
@@ -1699,21 +1699,25 @@ function updateHoldingsFromQuotes(quotes) {
 			} else {
 				quote.lastprice = parseFloat(hrow.cells[iCol].innerText);
 			}
+			//Last trade date
+			let todayDate = DateToString(new Date());
+			let updatedToday = todayDate == quote.date ? true: false;
 			
 			// change
 			//iCol = tableHeader.indexOf("change");
 			iCol = indexOfArray(tableHeader, "name", "change");
 			let change = 0;
-			if (quote.chg) {
-				
-				quote.change = parseFloat(quote.chg);
-			} 
-			if (quote.change) {
-				change = roundFloat(quote.change);
-				hrow.setAttribute("change", change);
-				hrow.cells[iCol].innerText = change.toLocaleString('en-US',{style: 'currency', currency: 'USD',});
-			} else {
-				change = roundFloat(dollarToFloat(hrow.cells[iCol].innerText));
+			if (updatedToday) {
+				if (quote.chg) {
+					quote.change = parseFloat(quote.chg);
+				} 
+				if (quote.change) {
+					change = roundFloat(quote.change);
+					hrow.setAttribute("change", change);
+					hrow.cells[iCol].innerText = change.toLocaleString('en-US',{style: 'currency', currency: 'USD',});
+				} else {
+					change = roundFloat(dollarToFloat(hrow.cells[iCol].innerText));
+				}				
 			}
 			if (change > 0) {
 				hrow.cells[iCol].className = "up";
@@ -1727,15 +1731,17 @@ function updateHoldingsFromQuotes(quotes) {
 			//iCol = tableHeader.indexOf("percent");
 			iCol = indexOfArray(tableHeader, "name", "percent");
 			let percent = 0;
-			if (quote.pchg) {
-				quote.percent = parseFloat(quote.pchg);
-			}
-			if (quote.percent) {
-				percent = roundFloat(quote.percent);
-				hrow.setAttribute("percent", percent);
-				hrow.cells[iCol].innerText = percent.toFixed(2) + "%"; 
-			} else {
-				percent = percentToFloat(hrow.cells[iCol].innerText);
+			if (updatedToday) {
+				if (quote.pchg) {
+					quote.percent = parseFloat(quote.pchg);
+				}
+				if (quote.percent) {
+					percent = roundFloat(quote.percent);
+					hrow.setAttribute("percent", percent);
+					hrow.cells[iCol].innerText = percent.toFixed(2) + "%"; 
+				} else {
+					percent = percentToFloat(hrow.cells[iCol].innerText);
+				}
 			}
 			if (percent > 0) {
 				hrow.cells[iCol].className = "up";
@@ -1744,6 +1750,7 @@ function updateHoldingsFromQuotes(quotes) {
 			} else {
 				hrow.cells[iCol].className = "";
 			}
+			
 			if (!tableHeader[iCol].display) {hrow.cells[iCol].classList.add("ninja");}			
 			// marketvalue
 			//iCol = tableHeader.indexOf("marketvalue");
@@ -1936,19 +1943,22 @@ function updateWatchListsFromQuotes(quotes) {
 		let hrow = document.getElementById("watch_" + quote.symbol);
 		let wrows = document.getElementsByName("wlid_" + quote.symbol);
 		
+		//Last trade date
+		let todayDate = DateToString(new Date());
+		let updatedToday = todayDate >= quote.date ? true: false;
 		// lastprice
 		if (quote.last) {
 			quote.lastprice = parseFloat(quote.last);
 		}
 		// change
 		let change = 0;
-		if (quote.chg) {
+		if (updatedToday && quote.chg) {
 			quote.change = parseFloat(quote.chg);
 			change = roundFloat(quote.change);
 		} 
 		// percent
 		let percent = 0;
-		if (quote.pchg) {
+		if (updatedToday && quote.pchg) {
 			quote.percent = parseFloat(quote.pchg);
 			percent = roundFloat(quote.percent);
 		}	

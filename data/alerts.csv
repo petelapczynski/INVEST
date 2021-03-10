@@ -7,3 +7,4 @@ id,symbol,trigger,condition,target,notes
 ac6a3eb8-cb02-8590-9875-b5fea23551e2,ALLY,date,greater,2024-01-28,"Own It 2 shares are vested!"
 107e1706-7a05-0553-a66d-6b98b77308d6,ALLY,date,greater,2023-01-28,"Own It 1 shares are vested!"
 2063171a-4bb0-3d00-8722-d9d97a5d6f6d,ALLY,lastprice,greater,40,"Get those Gainz!"
+9eaafdab-c33f-0359-ef47-83655d618ee2,*,gainpercent,greater,1000,💰💰💰💰💰💰💰💰💰💰
