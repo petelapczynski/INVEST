@@ -163,22 +163,23 @@ h3 {
 	color: #55BDF1;
 }
 
-#config_holding_columns {
+.config_list {
   border: 1px #dadada solid;
   background-color: #2A2D40;
   padding: 5px 5px 5px 5px;
   width: fit-content;
+  margin-bottom: 5px;
 }
 
-#config_holding_columns input {
+.config_list input {
   margin-right: 5px;
 }
 
-#config_holding_columns label {
+.config_list label {
   display: block;
 }
 
-#config_holding_columns label:hover {
+.config_list label:hover {
   background-color: #6a758a;
 }
 

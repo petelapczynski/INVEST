@@ -11,7 +11,7 @@
 
 // *** Helpful References, search for these keywords *** //
 // SETUP_EXTRA_ACCOUNTS - If using any Non Ally Invest accounts, make sure to update
-// SETUP_EXTERNAL_LINKS - section used for adding external links to each holding record.
+// SETUP_EXTERNAL_LINKS - section used for adding external links to each holding/watchlist record.
 
 var getDataInterval;
 
@@ -217,6 +217,16 @@ function setHoldingColumns() {
 	localStoreObjectSet("chart_columns", chart_columns_arr);
 }
 
+function setExternalLinks() {
+	let external_links = document.getElementById("config_external_links").getElementsByTagName("input");
+	let external_links_arr = [];
+	for (i = 0; i < external_links.length; i++) {
+		let item = {"name": external_links[i].value, "display": external_links[i].checked};
+		external_links_arr.push(item);
+	}
+	localStoreObjectSet("external_links", external_links_arr);	
+}
+
 function setupConfiguration() {
 	// setup configurable item values
 	
@@ -243,13 +253,30 @@ function setupConfiguration() {
 		localStoreObjectSet("chart_columns", chart_columns_arr);
 	}
 	for (var i = 2; i < chart_columns_arr.length; i++) {
-		//let txt = '<li id="chc' + i + '" draggable="true" ondragstart="drag(event)" ondrop="dropOpt(event)" ondragover="allowDrop(event)">' + chart_columns_arr[i].name + '</li>';
 		let isChecked = "";
 		if (chart_columns_arr[i].display) {isChecked = " checked";}
-		let txt = '<label id="lblchc' + i + '" for="chc' + i + '1" draggable="true" ondragstart="drag(event)" ondrop="dropOpt(event)" ondragover="allowDrop(event)">' +
-		'<input type="checkbox" id="chc' + i + '" onchange="setHoldingColumns();" value="' + chart_columns_arr[i].name + '" ' + isChecked + '>' + chart_columns_arr[i].name + '</label>';
+		let txt = '<label id="lbl_c_chc' + i + '" for="c_chc' + i + '1" draggable="true" ondragstart="drag(event)" ondrop="dropOpt(event)" ondragover="allowDrop(event)">' +
+		'<input type="checkbox" id="c_chc' + i + '" onchange="setHoldingColumns();" value="' + chart_columns_arr[i].name + '" ' + isChecked + '>' + chart_columns_arr[i].name + '</label>';
 		
 		chart_columns.insertAdjacentHTML("beforeend",txt);
+	}
+	
+	// Default external links for holdings/watchlists
+	let external_links_arr;
+	let external_links = document.getElementById("config_external_links");
+	if (localStorage.getItem("external_links") !== null) {
+		external_links_arr = localStoreObjectGet("external_links");	
+	} else {
+		external_links_arr = [{"name":"Ally","display":true},{"name":"Robinhood","display":true},{"name":"Fidelity","display":true},{"name":"TradingView","display":true},{"name":"Yahoo","display":true}];
+		localStoreObjectSet("external_links", external_links_arr);
+	}
+	for (var i = 0; i < external_links_arr.length; i++) {
+		let isChecked = "";
+		if (external_links_arr[i].display) {isChecked = " checked";}
+		let txt = '<label id="lbl_l_chc' + i + '" for="l_chc' + i + '1" draggable="true" ondragstart="drag(event)" ondrop="dropOpt(event)" ondragover="allowDrop(event)">' +
+		'<input type="checkbox" id="l_chc' + i + '" onchange="setExternalLinks();" value="' + external_links_arr[i].name + '" ' + isChecked + '>' + external_links_arr[i].name + '</label>';
+		
+		external_links.insertAdjacentHTML("beforeend",txt);
 	}
 	
 	// Default selected accounts
@@ -656,7 +683,6 @@ function roundFloat(num) {
 	return n;
 }
 
-
 function dollarToFloat(num) {
 	num = num.replace("$","");
 	num = num.replace(",","");
@@ -717,6 +743,46 @@ function getHoldingData(symbol, field) {
 			return row.getAttribute(field);
 			break;
 	}
+}
+
+function getExternalLinksHTML(symbol) {
+	// SETUP_EXTERNAL_LINKS
+	let links = localStoreObjectGet("external_links");
+	let iCol;
+	let txt = '';
+	
+	links.forEach(item => {
+		if (item.display) {
+			switch (item.name) {
+				case "Ally":
+					txt += '<a target="_blank" href="https://live.invest.ally.com/research/stocks/' + symbol + '/overview"><img src="http://ally.com/favicon.ico" class="icon"></a>'
+					break;
+				case "Robinhood":
+					txt += '<a target="_blank" href="https://robinhood.com/stocks/' + symbol + '"><img src="https://staging-cdn.robinhood.com/assets/generated_assets/167EWkdKrN2X6Jqp7LEO9o.ico" class="icon"></a>'	
+					break;
+				case "Fidelity":
+					txt += '<a target="_blank" href="https://eresearch.fidelity.com/eresearch/evaluate/snapshot.jhtml?symbols=' + symbol + '"><img src="https://www.fidelity.com/favicon.ico" class="icon"></a>'
+					break;
+				case "TradingView":
+					txt += '<a target="_blank" href="https://www.tradingview.com/symbols/' + symbol + '"><img src="https://www.tradingview.com/static/images/favicon.ico" class="icon"></a>'	
+					break;
+				case "Yahoo":
+					txt += '<a target="_blank" href="https://finance.yahoo.com/quote/' + symbol + '"><img src="https://s.yimg.com/cv/apiv2/default/fp/20180826/icons/favicon_y19_32x32.ico" class="icon"></a>'	
+					break;
+				case "MSN Money":
+					txt += '<a target="_blank" href="https://www.msn.com/en-us/money/stockdetails/fi-a1nbbh?symbol=' + symbol + '&form=PRSDRQ' + symbol + '"><img src="https://www.msn.com/favicon.ico" class="icon"></a>'	
+					break;
+				case "Google Finance":
+					txt += '<a target="_blank" href="https://www.google.com/finance/quote/' + symbol + ':NYSE"><img src="https://ssl.gstatic.com/finance/favicon/favicon.png" class="icon"></a>'						
+					break;
+				default:
+					break;
+			}			
+		}
+
+	});
+
+	return txt;
 }
 
 function accountAggregator(accountObj) {
@@ -1097,74 +1163,8 @@ function accountAggregator(accountObj) {
 					cell.appendChild(text);	
 					break;
 				case "external links":
-					// SETUP_EXTERNAL_LINKS
-					//Ally
-					let a = document.createElement('a');
-					let img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://live.invest.ally.com/research/stocks/' + holding.symbol + '/overview';
-					img.src = 'http://ally.com/favicon.ico';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					//Robinhood
-					a = document.createElement('a');
-					img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://robinhood.com/stocks/' + holding.symbol;
-					img.src = 'https://staging-cdn.robinhood.com/assets/generated_assets/167EWkdKrN2X6Jqp7LEO9o.ico';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					//Fidelity
-					a = document.createElement('a');
-					img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://eresearch.fidelity.com/eresearch/evaluate/snapshot.jhtml?symbols=' + holding.symbol;
-					img.src = 'https://www.fidelity.com/favicon.ico';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					//TradingView
-					a = document.createElement('a');
-					img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://www.tradingview.com/symbols/' + holding.symbol;
-					img.src = 'https://www.tradingview.com/static/images/favicon.ico';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					//Yahoo
-					a = document.createElement('a');
-					img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://finance.yahoo.com/quote/' + holding.symbol;
-					img.src = 'https://s.yimg.com/cv/apiv2/default/fp/20180826/icons/favicon_y19_32x32.ico';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					//MSN Money
-					/*
-					a = document.createElement('a');
-					img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://www.msn.com/en-us/money/stockdetails/fi-a1nbbh?symbol=' + holding.symbol + '&form=PRSDRQ';
-					img.src = 'https://www.msn.com/favicon.ico';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					*/
-					//Google
-					/*
-					a = document.createElement('a');
-					img = document.createElement('img');
-					a.target = '_blank';
-					a.href = 'https://www.google.com/finance/quote/' + holding.symbol + ':NYSE';
-					img.src = 'https://ssl.gstatic.com/finance/favicon/favicon.png';
-					img.classList.add('icon');
-					a.appendChild(img);
-					cell.appendChild(a);
-					*/		
+					let txt = getExternalLinksHTML(holding.symbol);
+					cell.insertAdjacentHTML('beforeend', txt);	
 					break;
 				default:
 					//do nothing
@@ -1884,6 +1884,7 @@ function setupWatchListsTable(watchListData) {
 			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',2,'number'" + ');">lastprice</th>' +
 			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',3,'dollar'" + ');">change</th>' +
 			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',4,'percent'" + ');">percent</th>' +
+			'<th>external links</th>' +
 			'</tr>' +
 			'</thead><tbody></tbody></table>';
 			
@@ -1907,7 +1908,11 @@ function setupWatchListsTable(watchListData) {
 			txt = '<tr id="' + watchListID + '_wlid_' + symbol + '" name="wlid_' + symbol + '" lastprice="0" change="0" percent="0">' +
 				'<td class="holding"><div class="watch_symb">' + symbol + '</div><div class="desc"> </div></td>' +
 				'<td class="ext-chart">' + charttext + '</td>' +
-				'<td>0</td><td>$0.00</td><td>0.00%</td></tr>';
+				'<td>0</td><td>$0.00</td><td>0.00%</td>'
+
+			txt += '<td class="ext-links">'
+			txt += getExternalLinksHTML(symbol);
+			txt += '</td></tr>';
 			tbody.insertAdjacentHTML('beforeend', txt);
 		
 			// initiate chart
@@ -1932,6 +1937,8 @@ function setupWatchListsTable(watchListData) {
 			  "container_id": "tradingview_wl" + i + "_" + symbol
 			  }
 			);
+			
+			// external links
 		}
 	}
 }
