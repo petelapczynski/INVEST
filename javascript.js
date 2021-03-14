@@ -8,6 +8,7 @@
 //alertReview() reviews each alerts to determine if it should be fired
 //alertUpdateQueue() queue system for updating alert data back to server
 //getWatchLists() gets watchlist data and builds tables
+//getAccountHistory gets Account Activity
 
 // *** Helpful References, search for these keywords *** //
 // SETUP_EXTRA_ACCOUNTS - If using any Non Ally Invest accounts, make sure to update
@@ -227,6 +228,13 @@ function setExternalLinks() {
 	localStoreObjectSet("external_links", external_links_arr);	
 }
 
+function setAccountActivity() {
+	let account_activity = localStoreObjectGet("account_activity");
+	account_activity.range = document.getElementById("activity_range").value;
+	account_activity.transaction = document.getElementById("activity_transaction").value;
+	localStoreObjectSet("account_activity", account_activity);
+}
+
 function setupConfiguration() {
 	// setup configurable item values
 	
@@ -279,6 +287,14 @@ function setupConfiguration() {
 		external_links.insertAdjacentHTML("beforeend",txt);
 	}
 	
+	// Default Account Activity
+	if (localStorage.getItem("account_activity") !== null) {
+		document.getElementById("activity_range").value = localStoreObjectGet("account_activity").range;
+		document.getElementById("activity_transaction").value = localStoreObjectGet("account_activity").transaction;
+	} else {
+		localStorage.setItem('account_activity', '{"range":"current_month","transaction":"all"}');
+	}
+	
 	// Default selected accounts
 	let selected_accounts_arr;
 	if (localStorage.getItem("selected_accounts") !== null) {
@@ -287,6 +303,68 @@ function setupConfiguration() {
 		selected_accounts_arr = [];
 		localStoreObjectSet("selected_accounts", selected_accounts_arr);
 	}
+	
+	//Sidebar open
+	document.getElementById("opennav").addEventListener("click", function(event) {
+		event.stopPropagation();
+		document.getElementById("sidenav").style.display = "block";
+	});
+	//Sidebar close
+	document.getElementById("closenav").addEventListener("click", function(event) {
+		event.stopPropagation();
+		document.getElementById("sidenav").style.display = "none";
+	});
+	//Sidebar clicks
+	document.getElementById("sidenav").addEventListener("click", function(event) {
+		event.stopPropagation();
+	});
+	//Sidebar close when click in body
+	document.getElementById("body").addEventListener("click", function() {
+		if(document.getElementById("sidenav").style.display == "block"){
+			document.getElementById("sidenav").style.display = "none";
+		}
+	});
+	//Sidebar navigation events//
+	//Account Holdings
+	document.getElementById("nav-account-holdings").addEventListener("click", function() {
+		if (document.getElementById("account-holdings").style.display == "none") {
+			document.getElementById("account-holdings").style.display = "block";
+		} else {
+			document.getElementById("account-holdings").style.display = "none";
+		}
+	});	
+	//Watch Lists
+	document.getElementById("nav-watch-lists").addEventListener("click", function() {
+		if (document.getElementById("watch-lists").style.display == "none") {
+			document.getElementById("watch-lists").style.display = "block";
+		} else {
+			document.getElementById("watch-lists").style.display = "none";
+		}
+	});	
+	//Account History
+	document.getElementById("nav-account-history").addEventListener("click", function() {
+		if (document.getElementById("account-history").style.display == "none") {
+			document.getElementById("account-history").style.display = "block";
+		} else {
+			document.getElementById("account-history").style.display = "none";
+		}
+	});	
+	//Alerts
+	document.getElementById("nav-alerts-section").addEventListener("click", function() {
+		if (document.getElementById("alerts-section").style.display == "none") {
+			document.getElementById("alerts-section").style.display = "block";
+		} else {
+			document.getElementById("alerts-section").style.display = "none";
+		}
+	});	
+	//Settings
+	document.getElementById("nav-config").addEventListener("click", function() {
+		if (document.getElementById("config").style.display == "none") {
+			document.getElementById("config").style.display = "block";
+		} else {
+			document.getElementById("config").style.display = "none";
+		}
+	});	
 	
 	// Begin remainder of loading process
 	getProfileData();
@@ -1181,8 +1259,10 @@ function accountAggregator(accountObj) {
 	
 	//Account-sync spinner
 	updateHoldingCount();
-	//updateHoldingComments();
+	//comments
 	getHoldingComments();
+	//activity
+	getAccountHistory();
 	//alerts
 	alertReview();
 	alertUpdateQueue();
@@ -1203,25 +1283,9 @@ function getHoldingSymbols(className) {
 	return holdings;
 }
 
-function updateHoldingComments() {
-	var holdings = getHoldingSymbols("symb");
-	for (i = 0; i < holdings.length; i++) {
-		let elmB = document.getElementById("badge-C-" + holdings[i]);
-		let elmC = document.getElementById("tooltip-C-" + holdings[i]);
-		if (localStorage.getItem(holdings[i]) !== null) {
-			elmB.classList.remove("ninja");
-			elmC.innerText = localStorage.getItem(holdings[i]);
-		} else {
-			elmB.classList.add("ninja");
-			elmC.innerText = "";
-		}
-	}
-}
-
 function getHoldingComments() {
 	// get comment information
 	fetch('api/comments.php').then(function(response) {
-		//return response.text();
 		return response.json();
 	}).then(function(response) {
 		if (response) {
@@ -1246,12 +1310,6 @@ function getHoldingComment(symbol) {
 
 function setHoldingComment(symbol, comment) {
 	if (symbol) {
-		//if (comment.length > 0) {
-			//localStorage.setItem(symbol,comment);
-		//} else {
-			//localStorage.removeItem(symbol);
-		//}		
-		//updateHoldingComments()
 		let req = {};
 		req.symbol = symbol;
 		req.comment = comment.trim();
@@ -1700,8 +1758,9 @@ function updateHoldingsFromQuotes(quotes) {
 				quote.lastprice = parseFloat(hrow.cells[iCol].innerText);
 			}
 			//Last trade date
-			let todayDate = DateToString(new Date());
-			let updatedToday = todayDate == quote.date ? true: false;
+			let todayDate = new Date(DateToString(new Date()));
+			let quoteDate = new Date(quote.date);
+			let updatedToday = todayDate <= quoteDate ? true: false;	
 			
 			// change
 			//iCol = tableHeader.indexOf("change");
@@ -1951,8 +2010,9 @@ function updateWatchListsFromQuotes(quotes) {
 		let wrows = document.getElementsByName("wlid_" + quote.symbol);
 		
 		//Last trade date
-		let todayDate = DateToString(new Date());
-		let updatedToday = todayDate >= quote.date ? true: false;
+		let todayDate = new Date(DateToString(new Date()));
+		let quoteDate = new Date(quote.date);
+		let updatedToday = todayDate <= quoteDate ? true: false;
 		// lastprice
 		if (quote.last) {
 			quote.lastprice = parseFloat(quote.last);
@@ -2004,6 +2064,64 @@ function updateWatchListsFromQuotes(quotes) {
 			wrow.cells[2].innerText = quote.lastprice.toFixed(2);
 			wrow.cells[3].innerText = change.toLocaleString('en-US',{style: 'currency', currency: 'USD',});
 			wrow.cells[4].innerText = percent.toFixed(2) + "%"; 
+		}
+	}
+}
+
+function getAccountHistory() {
+	// get all ally invest account history 
+	// returns [ {account, transactions [ {transaction},...]},... ]
+	//TODO setup accounts based on selected accounts, and filters for range and transaction type
+	let selectedAccounts = localStoreObjectGet("selected_accounts").join();
+	if (selectedAccounts == "") {return;}
+	let account_activity = localStoreObjectGet("account_activity");
+	let url = 'api/get_accounts_history.php?acct=' + selectedAccounts + "&range=" + account_activity.range + "&transactions=" + account_activity.transactions;
+	fetch(url).then(function(response) {
+		return response.json();
+	}).then(function(response) {
+		if  (response.hasOwnProperty('message')) {
+			console.log("getAccountHistory - error: " + response.message);
+		} else {
+			if (Array.isArray(response)) {
+				setupAccountHistoryTable(response);
+			}
+		}
+	}).catch(function(err) {
+		console.log('getAccountHistory - Fetch problem: ' + err.message);
+	});
+}
+
+function setupAccountHistoryTable(accountHistory) {	
+	let header = document.getElementById("account-history-table").getElementsByTagName("thead")[0];
+	header.insertAdjacentHTML('beforeend','<i class="fas fa-chevron-circle-down tbodyicon icon-left" onclick="toggleTBody(this, \'account-history-table\');"></i>');
+	
+	let tbody = document.getElementById("account-history-table").getElementsByTagName("tbody")[0];
+	tbody.innerHTML = "";
+	for (i = 0; i < accountHistory.length; i++) {
+		let selectedAccounts = document.getElementsByName("accountNumber");
+		let accountName = "";
+		for (let account of selectedAccounts) {
+			if (account.value == accountHistory[i].account) {
+				accountName = account.parentElement.innerText;
+				break;
+			}
+		}
+		if (accountHistory[i].transactions.length > 0) {
+			for (tran of accountHistory[i].transactions) {
+				txt = '<tr id="' + tran.transaction.transactionid + '">' +
+					'<td class="holding" name="' + accountHistory[i].account +'">' + accountName +'</td>' + 
+					'<td class="">' + tran.date.substr(0,10) +'</td>' + 
+					'<td class="holding">' + tran.activity +'</td>' + 
+					'<td class="">' + tran.transaction.quantity +'</td>' + 
+					'<td class="holding">' + tran.symbol +'</td>' + 
+					'<td class="holding">' + tran.desc +'</td>' + 
+					'<td class="">' + parseFloat(tran.transaction.price).toLocaleString('en-US',{style: 'currency', currency: 'USD',}) +'</td>' + 
+					'<td class="">' + parseFloat(tran.transaction.commission).toLocaleString('en-US',{style: 'currency', currency: 'USD',}) +'</td>' + 
+					'<td class="">' + ( parseFloat(tran.transaction.fee) + parseFloat(tran.transaction.secfee) ).toLocaleString('en-US',{style: 'currency', currency: 'USD',}) +'</td>' + 
+					'<td class="">' + parseFloat(tran.amount).toLocaleString('en-US',{style: 'currency', currency: 'USD',}) +'</td>' + 
+					'</tr>';
+				tbody.insertAdjacentHTML('beforeend', txt);
+			}
 		}
 	}
 }
@@ -2151,6 +2269,7 @@ function refreshAccountInterval() {
 		e.classList.remove("down");
 		interval = 10000;
 		getAccountData();
+		getAccountHistory();
 	} else {
 		if (e.classList.contains("down")) {
 			// updating halted
