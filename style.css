@@ -240,6 +240,16 @@ h3 {
 	display: block;
 }
 
+.graph-container {
+	width: fit-content;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.graphs {
+	float: left;
+}
+
 th {
 	font-weight:bold;
 

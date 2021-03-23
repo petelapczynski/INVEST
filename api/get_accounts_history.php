@@ -42,12 +42,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	$transactions = $params['transactions'];
 }
  
-//$url = "https://devapi.invest.ally.com/v1/accounts/60627905/history.xml?range=all&transactions=all";
-//echo $url;
-//$get_data = curl_http_request('GET', $url, false, $OAuthHeader);
-//$response = json_decode($get_data, true);
-//var_dump($response);
-
 $accountHistory = [];
 foreach ($accounts as $account) {
 	$url = "https://devapi.invest.ally.com/v1/accounts/" . $account . "/history.json?range=" . $range . "&transactions=" . $transactions;

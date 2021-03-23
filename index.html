@@ -8,7 +8,11 @@
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" />
 	<script type="text/javascript" src="javascript.js"></script>
 	<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-	<!-- <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script> -->
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script>
+		google.charts.load('current', {packages: ['corechart','line']});
+		//google.charts.setOnLoadCallback(drawChart);
+	</script>
 </head>
 
 <body id="body" onload="setupConfiguration();">
@@ -18,6 +22,7 @@
 	</div>
 	<nav id="sidenav" class="w3-sidenav w3-animate-left" >
 		<a id="closenav" href="javascript:void(0)" class="w3-closenav w3-large">Close Menu &times;</a>
+		<a id="nav-account-graphs" href="javascript:void(0)">Graphs</a>
 		<a id="nav-account-holdings" href="javascript:void(0)">Holdings</a>
 		<a id="nav-watch-lists" href="javascript:void(0)">Watch Lists</a>
 		<a id="nav-account-history" href="javascript:void(0)">Account History</a>
@@ -100,8 +105,14 @@
 				</div>					
 			</section>			  
 			</div>
-		</section >
-	  
+		</section>
+		
+		<section id="account-graphs" class="graph-container">
+			<div id="graph_1" class="graphs"></div>
+			<div id="graph_2" class="graphs"></div>
+			<div id="graph_3" class="graphs"></div>
+		</section>
+		
 		<section id="account-holdings" class="account-holdings">
 			<table id="holdings-table"></table>
 		</section>
@@ -119,7 +130,7 @@
 						</th>
 						<th>
 							<span onclick="loaderOn(tblSort,'account-history-table',2,'text');">activity </span>
-							<select id="activity_transaction" class="activity-input" onchange="setAccountActivity();"><option value="all">All</option><option value="bookkeeping">Bookkeeping</option><option value="trade">Trade</option></select>
+							<select id="activity_transactions" class="activity-input" onchange="setAccountActivity();"><option value="all">All</option><option value="bookkeeping">Bookkeeping</option><option value="trade">Trade</option></select>
 						</th>
 						<th onclick="loaderOn(tblSort,'account-history-table',3,'number');">qty</th>
 						<th onclick="loaderOn(tblSort,'account-history-table',4,'text');">sym</th>

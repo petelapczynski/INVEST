@@ -182,15 +182,9 @@ function indexOfArray(arr, field, value) {
 }
 
 Array.prototype.unique = function() {
-    var a = this.concat();
-    for(var i=0; i<a.length; ++i) {
-        for(var j=i+1; j<a.length; ++j) {
-            if(a[i] === a[j])
-                a.splice(j--, 1);
-        }
-    }
-
-    return a;
+	const uniqueSet = new Set(this);
+	const uniqueArray = [...uniqueSet];
+	return uniqueArray;
 };
 
 function allowDrop(ev) {
@@ -231,8 +225,10 @@ function setExternalLinks() {
 function setAccountActivity() {
 	let account_activity = localStoreObjectGet("account_activity");
 	account_activity.range = document.getElementById("activity_range").value;
-	account_activity.transaction = document.getElementById("activity_transaction").value;
+	account_activity.transactions = document.getElementById("activity_transactions").value;
 	localStoreObjectSet("account_activity", account_activity);
+	// get data
+	getAccountHistory();	
 }
 
 function setupConfiguration() {
@@ -290,9 +286,9 @@ function setupConfiguration() {
 	// Default Account Activity
 	if (localStorage.getItem("account_activity") !== null) {
 		document.getElementById("activity_range").value = localStoreObjectGet("account_activity").range;
-		document.getElementById("activity_transaction").value = localStoreObjectGet("account_activity").transaction;
+		document.getElementById("activity_transactions").value = localStoreObjectGet("account_activity").transactions;
 	} else {
-		localStorage.setItem('account_activity', '{"range":"current_month","transaction":"all"}');
+		localStorage.setItem('account_activity', '{"range":"current_month","transactions":"all"}');
 	}
 	
 	// Default selected accounts
@@ -325,6 +321,14 @@ function setupConfiguration() {
 		}
 	});
 	//Sidebar navigation events//
+	//Account Graphs
+	document.getElementById("nav-account-graphs").addEventListener("click", function() {
+		if (document.getElementById("account-graphs").style.display == "none") {
+			document.getElementById("account-graphs").style.display = "block";
+		} else {
+			document.getElementById("account-graphs").style.display = "none";
+		}
+	});	
 	//Account Holdings
 	document.getElementById("nav-account-holdings").addEventListener("click", function() {
 		if (document.getElementById("account-holdings").style.display == "none") {
@@ -697,6 +701,7 @@ function getAccountData() {
 				} else {
 					accounts.push(response);	
 				}
+				drawChartAccounts(accounts);
 				accountAggregator(accounts);
 			} else {
 				spinner("halt");
@@ -1266,6 +1271,8 @@ function accountAggregator(accountObj) {
 	//alerts
 	alertReview();
 	alertUpdateQueue();
+	// graph
+	drawChartHoldings(holdings);
 	spinner("off");
 }
 
@@ -2071,7 +2078,6 @@ function updateWatchListsFromQuotes(quotes) {
 function getAccountHistory() {
 	// get all ally invest account history 
 	// returns [ {account, transactions [ {transaction},...]},... ]
-	//TODO setup accounts based on selected accounts, and filters for range and transaction type
 	let selectedAccounts = localStoreObjectGet("selected_accounts").join();
 	if (selectedAccounts == "") {return;}
 	let account_activity = localStoreObjectGet("account_activity");
@@ -2091,6 +2097,19 @@ function getAccountHistory() {
 	});
 }
 
+function getSelectedAccountName(accountNumber) {
+	// get account display name
+	let selectedAccounts = document.getElementsByName("accountNumber");
+	let accountName = "";
+		for (let account of selectedAccounts) {
+			if (accountNumber == account.value) {
+				accountName = account.parentElement.innerText;
+				break;
+			}
+		}
+		return accountName;
+}
+
 function setupAccountHistoryTable(accountHistory) {	
 	let header = document.getElementById("account-history-table").getElementsByTagName("thead")[0];
 	header.insertAdjacentHTML('beforeend','<i class="fas fa-chevron-circle-down tbodyicon icon-left" onclick="toggleTBody(this, \'account-history-table\');"></i>');
@@ -2098,14 +2117,9 @@ function setupAccountHistoryTable(accountHistory) {
 	let tbody = document.getElementById("account-history-table").getElementsByTagName("tbody")[0];
 	tbody.innerHTML = "";
 	for (i = 0; i < accountHistory.length; i++) {
-		let selectedAccounts = document.getElementsByName("accountNumber");
-		let accountName = "";
-		for (let account of selectedAccounts) {
-			if (account.value == accountHistory[i].account) {
-				accountName = account.parentElement.innerText;
-				break;
-			}
-		}
+		
+		let accountName = getSelectedAccountName(accountHistory[i].account);
+
 		if (accountHistory[i].transactions.length > 0) {
 			for (tran of accountHistory[i].transactions) {
 				txt = '<tr id="' + tran.transaction.transactionid + '">' +
@@ -2124,6 +2138,7 @@ function setupAccountHistoryTable(accountHistory) {
 			}
 		}
 	}
+	drawChartDividends(accountHistory);
 }
 
 function updateAccountSummary() {
@@ -2293,4 +2308,140 @@ function refreshAccountInterval() {
 	if (interval > 0) {
 		getDataInterval = setTimeout(refreshAccountInterval, interval);
 	}
+}
+
+function drawChartAccounts(accounts) {
+	let dataValues = [["Account","Value"]];
+	for (var i = 0; i < accounts.length; i++) {
+		if (accounts[i].accountbalance.accountvalue != 0 
+		&& localStoreObjectGet("selected_accounts").includes(accounts[i].account)) {
+			let values = [getSelectedAccountName(accounts[i].account), parseFloat(accounts[i].accountbalance.accountvalue)];
+			dataValues.push(values);
+		}
+	}
+
+	var data = google.visualization.arrayToDataTable(dataValues);
+	
+	var options = {
+		title: 'Account Values',
+		width: '450',
+		is3D: true,
+		backgroundColor: '#161825',
+		titleTextStyle: {color: 'white'},
+		legend: {
+			position: 'top',
+			textStyle: {color: 'white'}
+		},
+	};
+
+	var chart = new google.visualization.PieChart(document.getElementById('graph_1'));
+	chart.draw(data, options);
+}
+
+function drawChartHoldings(holdings) {
+	let dataValues = [["Account","Value"]];
+	for (var i = 0; i < holdings.length; i++) {
+		if (holdings[i].symbol.accountvalue != 0 ) {
+			let values = [holdings[i].symbol, holdings[i].marketvalue];
+			dataValues.push(values);
+		}
+	}
+
+	var data = google.visualization.arrayToDataTable(dataValues);
+	
+	var options = {
+		title: 'Account Values',
+		width: '450',
+		sliceVisibilityThreshold: .05,
+		is3D: true,
+		backgroundColor: '#161825',
+		titleTextStyle: {color: 'white'},
+		legend: {
+			position: 'right',
+			textStyle: {color: 'white'}
+		},
+	};
+
+	var chart = new google.visualization.PieChart(document.getElementById('graph_2'));
+	chart.draw(data, options);
+}
+
+function drawChartDividends(accountHistory) {
+	let divTrans = [];
+	let uniqueDates = [];
+	let accounts = [];
+	let acctDiv = 0;
+	let totalDiv = 0;
+	let values = [];
+	
+	for (i = 0; i < accountHistory.length; i++) {
+		for (let tran of accountHistory[i].transactions) {
+			if(tran.activity == "Dividend") {
+				tran.account = accountHistory[i].account;
+				divTrans.push(tran);
+				uniqueDates.push(tran.date.substr(0,10));
+				accounts.push(accountHistory[i].account);
+			}	
+		}
+	}
+	
+	uniqueDates = uniqueDates.unique();
+	uniqueDates.sort();
+	accounts = accounts.unique();
+	
+	for (let itemDate of uniqueDates) {
+		let item = [];
+		item.push(new Date(itemDate));
+		//totalDiv = 0;
+		for (let acct of accounts) {
+			acctDiv = 0;
+			for (let tran of divTrans) {
+				if (acct == tran.account && itemDate == tran.date.substr(0,10)) {
+					acctDiv += parseFloat(tran.amount);
+					totalDiv += parseFloat(tran.amount);
+				}
+			}
+			item.push(acctDiv);
+		}
+		item.push(totalDiv);
+		values.push(item);
+	}
+		
+	var data = new google.visualization.DataTable();
+	
+	data.addColumn('date', 'Date');
+	for (let i = 0; i < accounts.length; i++) {
+		data.addColumn('number', getSelectedAccountName(accounts[i]));
+	}
+	data.addColumn('number', 'Total');
+	data.addRows(values);
+	
+	var options = {
+		title: 'Dividend Income',
+		width: '450',
+		height: '200',
+		backgroundColor: '#161825',
+		titleTextStyle: {color: 'white'},
+		hAxis: {
+			title: 'Date',
+			gridlines: {color: '#888'},
+			titleTextStyle: {color: 'white'},
+			textStyle: {color: 'white'},
+		},
+		vAxis: {
+			format: 'currency',
+			gridlines: {color: '#888'},
+			titleTextStyle: {color: 'white'},
+			textStyle: {color: 'white'},
+		},
+		legend: {
+			textStyle: {color: 'white'},
+			position: 'top',
+		},
+	};
+		
+	//var chart = new google.charts.Line(document.getElementById('graph_3'));
+	//chart.draw(data, google.charts.Line.convertOptions(options));
+    var chart = new google.visualization.LineChart(document.getElementById('graph_3'));
+    chart.draw(data, options);
 }
