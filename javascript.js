@@ -2375,14 +2375,26 @@ function drawChartDividends(accountHistory) {
 	let values = [];
 	
 	for (i = 0; i < accountHistory.length; i++) {
-		for (let tran of accountHistory[i].transactions) {
-			if(tran.activity == "Dividend") {
-				tran.account = accountHistory[i].account;
-				divTrans.push(tran);
-				uniqueDates.push(tran.date.substr(0,10));
-				accounts.push(accountHistory[i].account);
+			if (Array.isArray(accountHistory[i].transactions)) {
+				//array
+				for (let tran of accountHistory[i].transactions) {
+
+					if(tran.activity == "Dividend") {
+						tran.account = accountHistory[i].account;
+						divTrans.push(tran);
+						uniqueDates.push(tran.date.substr(0,10));
+						accounts.push(accountHistory[i].account);
+					}	
+				}				
+			} else {
+				//object
+				if(accountHistory[i].transactions.activity == "Dividend") {
+					accountHistory[i].transactions.account = accountHistory[i].account;
+					divTrans.push(accountHistory[i].transactions);
+					uniqueDates.push(accountHistory[i].transactions.date.substr(0,10));
+					accounts.push(accountHistory[i].account);
+				}	
 			}	
-		}
 	}
 	
 	uniqueDates = uniqueDates.unique();
@@ -2415,8 +2427,38 @@ function drawChartDividends(accountHistory) {
 	}
 	data.addColumn('number', 'Total');
 	data.addRows(values);
+	/*
+	var materialOptions = {
+		chart: {
+			title: 'Dividend Income'
+        },
+		width: '450',
+		height: '200',
+	    series: {
+			// Gives each series an axis name that matches the Y-axis below.
+			0: {axis: 'AcctDiv'},
+			1: {axis: 'AcctDiv'},
+			2: {axis: 'TotalDiv'}
+        },
+        axes: {
+			// Adds labels to each axis; they don't have to match the axis names.
+			y: {
+				AcctDiv: {label: 'Account Div'},
+				TotalDiv: {label: 'Total Div'}
+			}
+        }
+	};
+	*/
 	
-	var options = {
+	series = {};
+	for (i = 0; i < accounts.length; i++) {
+		series[i] = {targetAxisIndex: 0};
+		if ( (i+1) == accounts.length){
+			series[i+1] = {targetAxisIndex: 1};
+		}
+	}
+	
+	var classicOptions = {
 		title: 'Dividend Income',
 		width: '450',
 		height: '200',
@@ -2438,10 +2480,18 @@ function drawChartDividends(accountHistory) {
 			textStyle: {color: 'white'},
 			position: 'top',
 		},
+        // Gives each series an axis that matches the vAxes number below.
+        series
+        ,
+        vAxes: {
+          // Adds titles to each axis.
+          0: {title: 'Account Div'},
+          1: {title: 'Total Div'}
+        },		
 	};
 		
-	//var chart = new google.charts.Line(document.getElementById('graph_3'));
-	//chart.draw(data, google.charts.Line.convertOptions(options));
     var chart = new google.visualization.LineChart(document.getElementById('graph_3'));
-    chart.draw(data, options);
+    chart.draw(data, classicOptions);
+	//var materialChart = new google.charts.Line(document.getElementById('graph_3'));
+	//materialChart.draw(data, materialOptions);
 }
