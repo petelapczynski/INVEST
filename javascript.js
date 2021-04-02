@@ -233,6 +233,19 @@ function setAccountActivity() {
 
 function setupConfiguration() {
 	// setup configurable item values
+
+	// Default Refresh Interval
+	let refresh_int = document.getElementById("config_refresh_int");
+	refresh_int.onchange = function(){
+		localStorage.setItem("refresh_interval", this.value * 1000);
+	};
+
+	if (localStorage.getItem("refresh_interval") !== null) {
+		refresh_int.value = localStorage.getItem("refresh_interval") / 1000;
+	} else {
+		refresh_int.value = "15";
+		localStorage.setItem("refresh_interval", refresh_int.value * 1000);
+	}	
 	
 	// Default Mini Chart Interval
 	let chart_int = document.getElementById("config_chart_int");
@@ -320,56 +333,51 @@ function setupConfiguration() {
 			document.getElementById("sidenav").style.display = "none";
 		}
 	});
-	//Sidebar navigation events//
-	//Account Graphs
-	document.getElementById("nav-account-graphs").addEventListener("click", function() {
-		if (document.getElementById("account-graphs").style.display == "none") {
-			document.getElementById("account-graphs").style.display = "block";
-		} else {
-			document.getElementById("account-graphs").style.display = "none";
-		}
-	});	
-	//Account Holdings
-	document.getElementById("nav-account-holdings").addEventListener("click", function() {
-		if (document.getElementById("account-holdings").style.display == "none") {
-			document.getElementById("account-holdings").style.display = "block";
-		} else {
-			document.getElementById("account-holdings").style.display = "none";
-		}
-	});	
-	//Watch Lists
-	document.getElementById("nav-watch-lists").addEventListener("click", function() {
-		if (document.getElementById("watch-lists").style.display == "none") {
-			document.getElementById("watch-lists").style.display = "block";
-		} else {
-			document.getElementById("watch-lists").style.display = "none";
-		}
-	});	
-	//Account History
-	document.getElementById("nav-account-history").addEventListener("click", function() {
-		if (document.getElementById("account-history").style.display == "none") {
-			document.getElementById("account-history").style.display = "block";
-		} else {
-			document.getElementById("account-history").style.display = "none";
-		}
-	});	
-	//Alerts
-	document.getElementById("nav-alerts-section").addEventListener("click", function() {
-		if (document.getElementById("alerts-section").style.display == "none") {
-			document.getElementById("alerts-section").style.display = "block";
-		} else {
-			document.getElementById("alerts-section").style.display = "none";
-		}
-	});	
-	//Settings
-	document.getElementById("nav-config").addEventListener("click", function() {
-		if (document.getElementById("config").style.display == "none") {
-			document.getElementById("config").style.display = "block";
-		} else {
-			document.getElementById("config").style.display = "none";
-		}
-	});	
+
+	// Default Sections Layout
+	let sections_arr;
+	if (localStorage.getItem("sections") !== null) {
+		sections_arr = localStoreObjectGet("sections");	
+	} else {
+		sections_arr = [{"name":"account-graphs","display":true},
+		{"name":"account-holdings","display":true},
+		{"name":"watch-lists","display":true},
+		{"name":"account-history","display":true},
+		{"name":"alerts-section","display":true},
+		{"name":"config","display":true}];
+		localStoreObjectSet("sections", sections_arr);
+	}
 	
+	for (var i = 0; i < sections_arr.length; i++) {
+		//Sidebar navigation events
+		let sectionName = sections_arr[i].name;
+		document.getElementById("nav-" + sectionName).addEventListener("click", function() {
+			let display;
+			if (document.getElementById(sectionName).style.display == "none") {
+				document.getElementById(sectionName).style.display = "block";
+				display = true;
+			} else {
+				document.getElementById(sectionName).style.display = "none";
+				display = false;
+			}
+			
+			let sections_arr = localStoreObjectGet("sections");
+			for(j=0; j < sections_arr.length; j++) {
+				if (sections_arr[j].name == sectionName) {
+					sections_arr[j].display = display;
+				}
+			}
+			localStoreObjectSet("sections", sections_arr);
+			
+		});	
+		// display section
+		if (sections_arr[i].display) {
+			document.getElementById(sections_arr[i].name).style.display = "block";
+		} else {
+			document.getElementById(sections_arr[i].name).style.display = "none";
+		}
+	}
+		
 	// Begin remainder of loading process
 	getProfileData();
 }
@@ -1952,7 +1960,7 @@ function setupWatchListsTable(watchListData) {
 	// watchListData[ {id, items [ {costbasis,instrument{sym}, qty} ]} ]
 	let section = document.getElementById("watch-lists");
 	let txt = '';
-	//TODO WATCHLIST BADGES
+
 	for (i = 0; i < watchListData.length; i++) {
 		let watchListID = watchListData[i].id;
 		let tblName = "watchlist-table-" + i;
@@ -2325,7 +2333,7 @@ function refreshAccountInterval() {
 			interval = 30000;
 		} else {
 			// refresh data 
-			interval = 10000;
+			interval = parseFloat(localStorage.getItem("refresh_interval"));
 			
 			if (getHoldingSymbols("symb").length > 0) {
 				// Get holding information from realtime quotes
