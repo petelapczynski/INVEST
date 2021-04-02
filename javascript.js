@@ -374,11 +374,19 @@ function setupConfiguration() {
 	getProfileData();
 }
 
-function btnHoldingModal(symbol) {
-	//Setup Form
+function btnHoldingModal(symbol, rowType) {
+	//Setup Form 
 	let form = document.getElementById("id01_form");
-	let hrow = document.getElementById("trid_" + symbol);
-	let desc = hrow.cells.item(0).getElementsByClassName("desc")[0].innerText;
+	let hrow;
+	let desc;
+	if (rowType == "h") {
+		hrow = document.getElementById("trid_" + symbol);
+		desc = hrow.cells.item(0).getElementsByClassName("desc")[0].innerText;
+	} else if (rowType == "w") {
+		hrow = document.getElementsByName("wlid_" + symbol)[0];
+		desc = hrow.cells.item(0).getElementsByClassName("desc")[0].innerText;
+	}
+	
 	// comments	
 	document.getElementById("id01_comments").value = getHoldingComment(symbol);
 	document.getElementById('id01_comments').classList.remove("dirty");
@@ -1156,11 +1164,11 @@ function accountAggregator(accountObj) {
 					'<i class="fas fa-hand-holding-usd" style="display:inline"></i>' + 
 					'<div id="tooltip-D-' + holding["symbol"] + '" class="tooltiptext"></div>' +
 					'</span>' +
-					'<span id="badge-C-' + holding["symbol"] + '" class="holding-icon tooltip ninja">' + 
+					'<span id="badge-C-' + holding["symbol"] + '" name="badge-C-' + holding["symbol"] + '" class="holding-icon tooltip ninja">' + 
 					'<i class="far fa-comment-dots"  style="display:inline"></i>' +				
-					'<div id="tooltip-C-' + holding["symbol"] + '" class="tooltiptext"></div>' +
+					'<div id="tooltip-C-' + holding["symbol"] + '" name="tooltip-C-' + holding["symbol"] + '" class="tooltiptext"></div>' +
 					'</span>' + 
-					'<span id="badge-I-' + holding["symbol"] + '" class="holding-icon" onclick="btnHoldingModal(\'' + holding["symbol"] + '\');">' + 
+					'<span id="badge-I-' + holding["symbol"] + '" class="holding-icon" onclick="btnHoldingModal(\'' + holding["symbol"] + '\',\'h\');">' + 
 					'<i class="fas fa-file-invoice"  style="display:inline"></i>' +				
 					'</span>';
 
@@ -1297,12 +1305,14 @@ function getHoldingComments() {
 	}).then(function(response) {
 		if (response) {
 			for (i = 0; i < response.length; i++) {
-				let elmB = document.getElementById("badge-C-" + response[i].symbol);
-				let elmC = document.getElementById("tooltip-C-" + response[i].symbol);
-				if (elmB != null) 
-					elmB.classList.remove("ninja");
-				if (elmC != null)
-					elmC.innerText = response[i].comment;
+				let elmB = document.getElementsByName("badge-C-" + response[i].symbol);
+				let elmC = document.getElementsByName("tooltip-C-" + response[i].symbol);
+				for (j = 0; j < elmB.length; j++) {
+					if (elmB[j] != null) 
+						elmB[j].classList.remove("ninja");
+					if (elmC[j] != null)
+						elmC[j].innerText = response[i].comment;
+				}
 			}
 		}
 	}).catch(function(err) {
@@ -1320,11 +1330,13 @@ function setHoldingComment(symbol, comment) {
 		let req = {};
 		req.symbol = symbol;
 		req.comment = comment.trim();
-		let elmB = document.getElementById("badge-C-" + symbol);
-		let elmC = document.getElementById("tooltip-C-" + symbol);
-		elmB.classList.remove("ninja");
-		elmC.innerHTML = req.comment;
-		
+		let elmB = document.getElementsByName("badge-C-" + symbol);
+		let elmC = document.getElementsByName("tooltip-C-" + symbol);
+		for (i = 0; i < elmB.length; i++) {
+			elmB[i].classList.remove("ninja");
+			elmC[i].innerHTML = req.comment;
+		}
+
 		fetch("api/comments.php", {
 			method: "POST",
 			body: JSON.stringify(req),
@@ -1940,12 +1952,13 @@ function setupWatchListsTable(watchListData) {
 	// watchListData[ {id, items [ {costbasis,instrument{sym}, qty} ]} ]
 	let section = document.getElementById("watch-lists");
 	let txt = '';
-	
+	//TODO WATCHLIST BADGES
 	for (i = 0; i < watchListData.length; i++) {
 		let watchListID = watchListData[i].id;
 		let tblName = "watchlist-table-" + i;
 		txt = '<table id="' + tblName + '" name="' + watchListID + '" class="watchlist-table"><thead><tr>' +
 			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',0,'text'" + ');" class="min-width-10">' + watchListID + '</th>' +
+			'<th></th>' +
 			'<th>chart</th>' +
 			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',2,'number'" + ');">lastprice</th>' +
 			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',3,'dollar'" + ');">change</th>' +
@@ -1961,6 +1974,20 @@ function setupWatchListsTable(watchListData) {
 		
 		for (listItem of watchListData[i].items) {
 			let symbol = listItem.instrument.sym;
+			
+			// watchlist badges
+			let badgetext = '<td class="ext-badges"><span id="badge-D-' + symbol + '" class="holding-icon tooltip ninja">' + 
+			'<i class="fas fa-hand-holding-usd" style="display:inline"></i>' + 
+			'<div id="tooltip-D-' + symbol + '" class="tooltiptext"></div>' +
+			'</span>' +
+			'<span id="badge-C-' + symbol + '" name="badge-C-' + symbol + '" class="holding-icon tooltip ninja">' + 
+			'<i class="far fa-comment-dots"  style="display:inline"></i>' +				
+			'<div id="tooltip-C-' + symbol + '" name="tooltip-C-' + symbol + '" class="tooltiptext"></div>' +
+			'</span>' + 
+			'<span id="badge-I-' + symbol + '" class="holding-icon" onclick="btnHoldingModal(\'' + symbol + '\',\'w\');">' + 
+			'<i class="fas fa-file-invoice"  style="display:inline"></i>' +				
+			'</span></td>';
+			
 			// External Medium Chart
 			let charttext = '<!-- TradingView Widget BEGIN --> ' + 
 			'<!-- https://www.tradingview.com/widget/symbol-overview/ -->' +
@@ -1973,6 +2000,7 @@ function setupWatchListsTable(watchListData) {
 			
 			txt = '<tr id="' + watchListID + '_wlid_' + symbol + '" name="wlid_' + symbol + '" lastprice="0" change="0" percent="0">' +
 				'<td class="holding"><div class="watch_symb">' + symbol + '</div><div class="desc"> </div></td>' +
+				badgetext + 
 				'<td class="ext-chart">' + charttext + '</td>' +
 				'<td>0</td><td>$0.00</td><td>0.00%</td>'
 
@@ -2004,9 +2032,9 @@ function setupWatchListsTable(watchListData) {
 			  }
 			);
 			
-			// external links
 		}
 	}
+	getHoldingComments();
 }
 
 function updateWatchListsFromQuotes(quotes) {
@@ -2051,6 +2079,10 @@ function updateWatchListsFromQuotes(quotes) {
 			wrow.setAttribute("lastprice", quote.lastprice);
 			wrow.setAttribute("change", change);
 			wrow.setAttribute("percent", percent);
+			wrow.setAttribute("vwap",quote.vwap);
+			wrow.setAttribute("adp_50",quote.adp_50);
+			wrow.setAttribute("adp_100",quote.adp_100);
+			wrow.setAttribute("adp_200",quote.adp_200);
 			wrow.getElementsByClassName("desc")[0].innerText = " " + quote.name;
 			// watch list field classes
 			if (change > 0) {
