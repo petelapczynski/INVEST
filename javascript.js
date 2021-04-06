@@ -2094,23 +2094,23 @@ function updateWatchListsFromQuotes(quotes) {
 			wrow.getElementsByClassName("desc")[0].innerText = " " + quote.name;
 			// watch list field classes
 			if (change > 0) {
-				wrow.cells[3].className = "up";
-			} else if (change < 0) {
-				wrow.cells[3].className = "down";
-			} else {
-				wrow.cells[3].className = "";
-			}
-			if (percent > 0) {
 				wrow.cells[4].className = "up";
-			} else if (percent < 0) {
+			} else if (change < 0) {
 				wrow.cells[4].className = "down";
 			} else {
 				wrow.cells[4].className = "";
 			}
+			if (percent > 0) {
+				wrow.cells[5].className = "up";
+			} else if (percent < 0) {
+				wrow.cells[5].className = "down";
+			} else {
+				wrow.cells[5].className = "";
+			}
 			// watch list field values
-			wrow.cells[2].innerText = quote.lastprice.toFixed(2);
-			wrow.cells[3].innerText = change.toLocaleString('en-US',{style: 'currency', currency: 'USD',});
-			wrow.cells[4].innerText = percent.toFixed(2) + "%"; 
+			wrow.cells[3].innerText = quote.lastprice.toFixed(2);
+			wrow.cells[4].innerText = change.toLocaleString('en-US',{style: 'currency', currency: 'USD',});
+			wrow.cells[5].innerText = percent.toFixed(2) + "%"; 
 		}
 	}
 }
