@@ -133,7 +133,7 @@ function loaderOn(callback, tblID, n, type) {
 	if (callback instanceof Function) {
 		setTimeout(function(){
 			document.getElementById('processing').style.display = 'block';
-			tblSort(tblID, n, type);
+			sortTable(tblID, n, type);
 		}, 1);			
 	}
 }
@@ -186,6 +186,30 @@ Array.prototype.unique = function() {
 	const uniqueArray = [...uniqueSet];
 	return uniqueArray;
 };
+
+Array.prototype.equals = function (array) {
+    // if the other array is a falsy value, return
+    if (!array)
+        return false;
+
+    // compare lengths - can save a lot of time 
+    if (this.length != array.length)
+        return false;
+
+    for (var i = 0, l=this.length; i < l; i++) {
+        // Check if we have nested arrays
+        if (this[i] instanceof Array && array[i] instanceof Array) {
+            // recurse into the nested arrays
+            if (!this[i].equals(array[i]))
+                return false;       
+        }           
+        else if (this[i] != array[i]) { 
+            // Warning - two different object instances will never be equal: {x:20} != {x:20}
+            return false;   
+        }           
+    }       
+    return true;
+}
 
 function allowDrop(ev) {
 	ev.preventDefault();
@@ -501,82 +525,61 @@ function btnCloseHoldingModal() {
 	document.getElementById('id01').style.display='none';
 }
 
-function tblSort(tblID, n, type) {
-  // tblID is the table element id, n is column number, type can be text/number
+function sortTable(tblID, n, type){
+  // tblID is the table element id, n is column number, type can be text,number,dollar,percent
   loaderOn();
   document.getElementById('processing').style.display = 'block';
-  
-  var table, rows, switching, i, x, xVal, y, yVal, shouldSwitch, dir, switchcount = 0;
-  table = document.getElementById(tblID);
-  switching = true;
-  // Set the sorting direction to ascending:
-  dir = "asc";
-  /* Make a loop that will continue until
-  no switching has been done: */
-  while (switching) {
-    // Start by saying: no switching is done:
-    switching = false;
-    rows = table.rows;
-    /* Loop through all table rows (except the
-    first, which contains table headers): */
-    for (i = 1; i < (rows.length - 1); i++) {
-      // Start by saying there should be no switching:
-      shouldSwitch = false;
-      /* Get the two elements you want to compare,
-      one from current row and one from the next: */
-      x = rows[i].getElementsByTagName("TD")[n];
-      y = rows[i + 1].getElementsByTagName("TD")[n];
-	  
-	  if (type == "text") {
-		  xVal = x.innerText.toLowerCase();
-		  yVal = y.innerText.toLowerCase();		  
-	  } else if (type == "number") {
-		  xVal = parseFloat(x.innerText);
-		  yVal = parseFloat(y.innerText);
-	  } else if (type == "dollar") { 
-	      xVal = dollarToFloat(x.innerText);
-		  yVal = dollarToFloat(y.innerText);
-	  } else if (type == "percent") {
-		  xVal = percentToFloat(x.innerText);
-		  yVal = percentToFloat(y.innerText);
-	  } else {
-	      break;
-	  }
-	 
-      /* Check if the two rows should switch place,
-      based on the direction, asc or desc: */
-      if (dir == "asc") {
-        if (xVal > yVal) {
-          // If so, mark as a switch and break the loop:
-          shouldSwitch = true;
-          break;
-        }
-      } else if (dir == "desc") {
-        if (xVal < yVal) {
-          // If so, mark as a switch and break the loop:
-          shouldSwitch = true;
-          break;
-        }
-      }
+	
+    var tbl = document.getElementById(tblID).tBodies[0];
+    var sortArray = [];
+	var preSortArray = [];
+    for(var i=0, len=tbl.rows.length; i<len; i++){
+        var row = tbl.rows[i];
+		var sortnr;
+
+		if (type == "text") {
+			sortnr = row.cells[n].innerText.toLowerCase();
+		} else if (type == "number") {
+			sortnr = parseFloat(row.cells[n].innerText);
+		} else if (type == "dollar") { 
+			sortnr = dollarToFloat(row.cells[n].innerText);
+		} else if (type == "percent") {
+			sortnr = percentToFloat(row.cells[n].innerText);
+		}
+       
+		sortArray.push([sortnr, row]);
+		preSortArray.push([sortnr, row]);
     }
-    if (shouldSwitch) {
-      /* If a switch has been marked, make the switch
-      and mark that a switch has been done: */
-      rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-      switching = true;
-      // Each time a switch is done, increase this count by 1:
-      switchcount ++;
-    } else {
-      /* If no switching has been done AND the direction is "asc",
-      set the direction to "desc" and run the while loop again. */
-      if (switchcount == 0 && dir == "asc") {
-        dir = "desc";
-        switching = true;
-      }
+	if (type == "text") {
+		sortArray.sort(function(a,b){
+			var x = a[0];
+			x = x.toLowerCase();
+			var y = b[0];
+			y = y.toLowerCase();
+			if (x < y) {return -1;}
+			if (x > y) {return 1;}
+			return 0;
+		});
+		if (sortArray.equals(preSortArray)){
+			sortArray.reverse();
+		}
+	} else {
+		sortArray.sort(function(a,b){
+			return a[0] - b[0];
+		});
+		if (sortArray.equals(preSortArray)){
+			sortArray.sort(function(a,b) {
+				return b[0] - a[0];
+			});
+		}
+	}
+    for(var i=0, len=sortArray.length; i<len; i++){
+        tbl.appendChild(sortArray[i][1]);
     }
-  }
+    sortArray = null;
+	preSortArray = null;
   loaderOff();
-}	
+}
 
 function apiAccountData(url) {
 	var req = new XMLHttpRequest();
@@ -1039,7 +1042,7 @@ function accountAggregator(accountObj) {
 			case "holdings":
 				// modified column
 				th.innerHTML = '<th>holdings <span id="holdingcount" class="badge"></span></th>';
-				th.setAttribute("onclick","loaderOn(tblSort,'holdings-table'," + iCol + ",'" + "text" + "');");
+				th.setAttribute("onclick","loaderOn(sortTable,'holdings-table'," + iCol + ",'" + "text" + "');");
 				th.classList.add("min-width-10");
 				if (!item.display) {th.classList.add("ninja");}
 				hrow.appendChild(th);
@@ -1093,7 +1096,7 @@ function accountAggregator(accountObj) {
 		
 		if (add) {
 			th.appendChild(text);
-			th.setAttribute("onclick","loaderOn(tblSort,'holdings-table'," + iCol + ",'" + txtType + "');");
+			th.setAttribute("onclick","loaderOn(sortTable,'holdings-table'," + iCol + ",'" + txtType + "');");
 			if (!item.display) {th.classList.add("ninja");}
 			hrow.appendChild(th);
 			iCol++;	
@@ -1965,12 +1968,12 @@ function setupWatchListsTable(watchListData) {
 		let watchListID = watchListData[i].id;
 		let tblName = "watchlist-table-" + i;
 		txt = '<table id="' + tblName + '" name="' + watchListID + '" class="watchlist-table"><thead><tr>' +
-			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',0,'text'" + ');" class="min-width-10">' + watchListID + '</th>' +
+			'<th onclick="loaderOn(sortTable,' + "'" + tblName + "',0,'text'" + ');" class="min-width-10">' + watchListID + '</th>' +
 			'<th></th>' +
 			'<th>chart</th>' +
-			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',2,'number'" + ');">lastprice</th>' +
-			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',3,'dollar'" + ');">change</th>' +
-			'<th onclick="loaderOn(tblSort,' + "'" + tblName + "',4,'percent'" + ');">percent</th>' +
+			'<th onclick="loaderOn(sortTable,' + "'" + tblName + "',3,'number'" + ');">lastprice</th>' +
+			'<th onclick="loaderOn(sortTable,' + "'" + tblName + "',4,'dollar'" + ');">change</th>' +
+			'<th onclick="loaderOn(sortTable,' + "'" + tblName + "',5,'percent'" + ');">percent</th>' +
 			'<th>external links</th>' +
 			'</tr>' +
 			'</thead><tbody></tbody></table>';
