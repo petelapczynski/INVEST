@@ -1427,26 +1427,27 @@ function setAlerts(type, holdingAlert) {
 }
 
 function alertDisplay(symbol, holdingAlert) {
+	document.getElementById("alert_clear_all").style.display = "block";
 	let elm = document.getElementById("alerts");
 	let ext = holdingAlert.symbol == "*" ? "_" + symbol : "";
 	let txt;
 	if (holdingAlert.trigger == "trailloss") {
 		txt = '<div id="alert_id_' + holdingAlert.id + ext + '" alert_id="' + holdingAlert.id + '" class="alert less">' +
-		'<span class="closebtn" onclick="alertClear(this);"><i class="fas fa-eye-slash"></i></span>' +
+		'<span class="closebtn alertclear" onclick="alertClear(this);"><i class="fas fa-eye-slash"></i></span>' +
 		'<span class="closebtn" onclick="alertRemove(this);"><i class="fas fa-trash"></i></span>' +
 		'<strong>' + symbol + ': </strong> ' +  
 		'Trailing Stop Loss reached at $' + holdingAlert.condition + ' less than $' + holdingAlert.target + 
 		'.<br>' + holdingAlert.notes + '</div>';
 	} else if (holdingAlert.trigger == "trailpercent") {
 		txt = '<div id="alert_id_' + holdingAlert.id + ext + '" alert_id="' + holdingAlert.id + '" class="alert less">' +
-		'<span class="closebtn" onclick="alertClear(this);"><i class="fas fa-eye-slash"></i></span>' +
+		'<span class="closebtn alertclear" onclick="alertClear(this);"><i class="fas fa-eye-slash"></i></span>' +
 		'<span class="closebtn" onclick="alertRemove(this);"><i class="fas fa-trash"></i></span>' +
 		'<strong>' + symbol + ': </strong> ' +  
 		'Trailing Stop Percent reached at ' + holdingAlert.condition + '% less than $' + holdingAlert.target + 
 		'.<br>' + holdingAlert.notes + '</div>';
 	} else {
 		txt = '<div id="alert_id_' + holdingAlert.id + ext + '" alert_id="' + holdingAlert.id + '" class="alert ' + holdingAlert.condition + '">' +
-		'<span class="closebtn" onclick="alertClear(this);"><i class="fas fa-eye-slash"></i></span>' +
+		'<span class="closebtn alertclear" onclick="alertClear(this);"><i class="fas fa-eye-slash"></i></span>' +
 		'<span class="closebtn" onclick="alertRemove(this);"><i class="fas fa-trash"></i></span>' +
 		'<strong>' + symbol + ': </strong> ' +  
 		holdingAlert.trigger + ' is ' + holdingAlert.condition + ' than ' + holdingAlert.target + 
@@ -1494,6 +1495,7 @@ function alertClear(elm) {
 	div.style.opacity = "0";
 	setTimeout(function(){ 
 		div.style.display = "none";
+		hideAllAlertClear()
 	}, 500);
 }
 
@@ -1504,7 +1506,30 @@ function alertRemove(elm) {
 	setTimeout(function(){ 
 		div.style.display = "none";
 		alertDelete(alertID);
+		hideAllAlertClear()
 	}, 500);
+}
+
+function allAlertClear(){
+	let divs = document.getElementsByClassName("alertclear");	
+	for (i = 0; i < divs.length; i++) {
+		divs[i].click();
+	}
+	document.getElementById("alert_clear_all").style.display = "none";
+}
+
+function hideAllAlertClear() {
+	let divs = document.getElementsByClassName("alert");	
+	let bhide = true;
+	for (i = 0; i < divs.length; i++) {
+		if (divs[i].style.display == "" || divs[i].style.display == "block") {
+			bhide = false;
+			break;
+		}
+	}
+	if (bhide) {
+		document.getElementById("alert_clear_all").style.display = "none";
+	}
 }
 
 function alertTableAdd(holdingAlert) {
