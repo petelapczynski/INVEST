@@ -2608,6 +2608,16 @@ function calculateDividends(accountHistory) {
 function updateHoldingDividends(holdingDivValues) {
 	let tableHeader = getHeaderFields();
 	let iCol = indexOfArray(tableHeader, "name", "dividends");
+	// reset div amounts
+	let holdings = getHoldingSymbols("symb");
+	for (i = 0; i < holdings.length; i++) {
+		let row = document.getElementById("trid_" + holdings[i]);
+		if (row) {
+			row.setAttribute("dividends", "0.00");
+			row.cells[iCol].innerText = "$0.00";
+		}
+	}	
+	// populate div amounts
 	for (i = 0; i < holdingDivValues.length; i++) {
 		let row = document.getElementById("trid_" + holdingDivValues[i].symbol);
 		if (row) {
