@@ -290,7 +290,7 @@ function setupConfiguration() {
 	if (localStorage.getItem("chart_columns") !== null) {
 		chart_columns_arr = localStoreObjectGet("chart_columns");	
 	} else {
-		chart_columns_arr = [{"name":"holdings","display":true},{"name":"badges","display":true},{"name":"chart","display":true},{"name":"qty","display":true},{"name":"lastprice","display":true},{"name":"change","display":true},{"name":"percent","display":true},{"name":"marketvalue","display":true},{"name":"costbasis","display":true},{"name":"avgcost","display":true},{"name":"gainloss","display":true},{"name":"gainpercent","display":true},{"name":"% of account","display":true},{"name":"external links","display":true}];
+		chart_columns_arr = [{"name":"holdings","display":true},{"name":"badges","display":true},{"name":"chart","display":true},{"name":"qty","display":true},{"name":"lastprice","display":true},{"name":"change","display":true},{"name":"percent","display":true},{"name":"marketvalue","display":true},{"name":"costbasis","display":true},{"name":"avgcost","display":true},{"name":"dividends","display":true},{"name":"gainloss","display":true},{"name":"gainpercent","display":true},{"name":"% of account","display":true},{"name":"external links","display":true}];
 		localStoreObjectSet("chart_columns", chart_columns_arr);
 	}
 	for (var i = 2; i < chart_columns_arr.length; i++) {
@@ -838,7 +838,7 @@ function getHoldingData(symbol, field) {
 			break;
 		case "% of account":
 			//let iCol = getHeaderFields.indexOf("% of account");
-			let iCol = indexOfArray(getHeaderFields, "name", "% of account");
+			let iCol = indexOfArray(getHeaderFields(), "name", "% of account");
 			return row.cells[iCol].innerText;
 			break;
 		default:
@@ -956,6 +956,14 @@ function accountAggregator(accountObj) {
 			}
 		}
 	});
+	
+	// calc each percent of account
+	for (i = 0; i < holdings.length; i++) {
+		let percentofaccount = (holdings[i]["marketvalue"] / totalAccountValue) * 100;
+		if (Number.isNaN(percentofaccount)) {percentofaccount = 0;}
+		holdings[i].acctpercent = percentofaccount;
+	}
+
 	
 	holdings.sort(compare);
 	//console.log(holdings);
@@ -1087,6 +1095,7 @@ function accountAggregator(accountObj) {
 			case "costbasis":
 			case "gainloss":
 			case "avgcost":
+			case "dividends":
 				add = true;
 				txtType = "dollar";
 				break;
@@ -1120,7 +1129,7 @@ function accountAggregator(accountObj) {
 		row.setAttribute("costbasis", holding.costbasis);
 		row.setAttribute("gainloss", holding.gainloss);
 		row.setAttribute("gainpercent", holding.gainpercent);
-		row.setAttribute("acctpercent", "0.0");
+		row.setAttribute("acctpercent", holding.acctpercent);
 		
 		for (let item of tableHeader) {
 			let key = item.name;
@@ -1257,10 +1266,13 @@ function accountAggregator(accountObj) {
 					text = document.createTextNode(cellval);
 					cell.appendChild(text);	
 					break;
+				case "dividends":				
+					let div = 0;
+					text = document.createTextNode(div.toLocaleString('en-US',{style: 'currency', currency: 'USD',}));
+					cell.appendChild(text);	
+					break;
 				case "% of account":
-					let percentofaccount = (holding["marketvalue"] / totalAccountValue) * 100;
-					if (Number.isNaN(percentofaccount)) {percentofaccount = 0;}
-					let pertext = percentofaccount.toFixed(2) + "%";
+					let pertext = holding["acctpercent"].toFixed(2) + "%";
 					text = document.createTextNode(pertext);
 					cell.appendChild(text);	
 					break;
@@ -1471,7 +1483,6 @@ function btnCreateAlert() {
 		alertAdd(holdingAlert);
 	}
 }
-
 
 function btnCreateModalAlert() {
 	let form = document.getElementById("id01_form")
@@ -2190,10 +2201,15 @@ function setupAccountHistoryTable(accountHistory) {
 
 		if (accountHistory[i].transactions.length > 0) {
 			for (tran of accountHistory[i].transactions) {
+				let txtTransType = "";
+				if (tran.activity == "Bookkeeping" && tran.transaction.transactiontype != "") {
+					txtTransType = '<span name="badge-C" class="holding-icon tooltip w3-right"><i class="far fa-comment-dots" style="display:inline"></i>' + 
+					'<div id="tooltip-C" name="tooltip-C" class="tooltiptext">' + tran.transaction.transactiontype + '</div></span>';
+				}
 				txt = '<tr id="' + tran.transaction.transactionid + '">' +
 					'<td class="holding" name="' + accountHistory[i].account +'">' + accountName +'</td>' + 
 					'<td class="">' + tran.date.substr(0,10) +'</td>' + 
-					'<td class="holding">' + tran.activity +'</td>' + 
+					'<td class="holding">' + tran.activity + txtTransType +	'</td>' + 
 					'<td class="">' + tran.transaction.quantity +'</td>' + 
 					'<td class="holding">' + tran.symbol +'</td>' + 
 					'<td class="holding">' + tran.desc +'</td>' + 
@@ -2206,7 +2222,7 @@ function setupAccountHistoryTable(accountHistory) {
 			}
 		}
 	}
-	drawChartDividends(accountHistory);
+	calculateDividends(accountHistory);
 }
 
 function updateAccountSummary() {
@@ -2434,59 +2450,7 @@ function drawChartHoldings(holdings) {
 	chart.draw(data, options);
 }
 
-function drawChartDividends(accountHistory) {
-	let divTrans = [];
-	let uniqueDates = [];
-	let accounts = [];
-	let acctDiv = 0;
-	let totalDiv = 0;
-	let values = [];
-	
-	for (i = 0; i < accountHistory.length; i++) {
-			if (Array.isArray(accountHistory[i].transactions)) {
-				//array
-				for (let tran of accountHistory[i].transactions) {
-
-					if(tran.activity == "Dividend") {
-						tran.account = accountHistory[i].account;
-						divTrans.push(tran);
-						uniqueDates.push(tran.date.substr(0,10));
-						accounts.push(accountHistory[i].account);
-					}	
-				}				
-			} else {
-				//object
-				if(accountHistory[i].transactions.activity == "Dividend") {
-					accountHistory[i].transactions.account = accountHistory[i].account;
-					divTrans.push(accountHistory[i].transactions);
-					uniqueDates.push(accountHistory[i].transactions.date.substr(0,10));
-					accounts.push(accountHistory[i].account);
-				}	
-			}	
-	}
-	
-	uniqueDates = uniqueDates.unique();
-	uniqueDates.sort();
-	accounts = accounts.unique();
-	
-	for (let itemDate of uniqueDates) {
-		let item = [];
-		item.push(new Date(itemDate));
-		//totalDiv = 0;
-		for (let acct of accounts) {
-			acctDiv = 0;
-			for (let tran of divTrans) {
-				if (acct == tran.account && itemDate == tran.date.substr(0,10)) {
-					acctDiv += parseFloat(tran.amount);
-					totalDiv += parseFloat(tran.amount);
-				}
-			}
-			item.push(acctDiv);
-		}
-		item.push(totalDiv);
-		values.push(item);
-	}
-		
+function drawChartDividends(accounts, values) {
 	var data = new google.visualization.DataTable();
 	
 	data.addColumn('date', 'Date');
@@ -2562,4 +2526,93 @@ function drawChartDividends(accountHistory) {
     chart.draw(data, classicOptions);
 	//var materialChart = new google.charts.Line(document.getElementById('graph_3'));
 	//materialChart.draw(data, materialOptions);
+}
+
+function calculateDividends(accountHistory) {
+	let divTrans = [];
+	let uniqueDates = [];
+	let uniqueHoldings = [];
+	let accounts = [];
+	let div = 0;
+	let totalDiv = 0;
+	let dateDivValues = [];
+	let holdingDivValues = [];
+	
+	for (i = 0; i < accountHistory.length; i++) {
+			if (Array.isArray(accountHistory[i].transactions)) {
+				//array
+				for (let tran of accountHistory[i].transactions) {
+
+					if(tran.activity == "Dividend" 
+					|| tran.transaction.transactiontype == "Foreign Security Withholding") {
+						tran.account = accountHistory[i].account;
+						divTrans.push(tran);
+						uniqueDates.push(tran.date.substr(0,10));
+						uniqueHoldings.push(tran.symbol);
+						accounts.push(accountHistory[i].account);
+					}	
+				}				
+			} else {
+				//object
+				if(accountHistory[i].transactions.activity == "Dividend" 
+				|| accountHistory[i].transactions.transaction.transactiontype == "Foreign Security Withholding") {
+					accountHistory[i].transactions.account = accountHistory[i].account;
+					divTrans.push(accountHistory[i].transactions);
+					uniqueDates.push(accountHistory[i].transactions.date.substr(0,10));
+					uniqueHoldings.push(accountHistory[i].transactions.symbol);
+					accounts.push(accountHistory[i].account);
+				}	
+			}	
+	}
+	
+	uniqueDates = uniqueDates.unique();
+	uniqueDates.sort();
+	uniqueHoldings = uniqueHoldings.unique();
+	uniqueHoldings.sort();
+	accounts = accounts.unique();
+
+	for (let itemDate of uniqueDates) {
+		let item = [];
+		item.push(new Date(itemDate));
+		for (let acct of accounts) {
+			div = 0;
+			for (let tran of divTrans) {
+				if (acct == tran.account && itemDate == tran.date.substr(0,10)) {
+					div += parseFloat(tran.amount);
+					totalDiv += parseFloat(tran.amount);
+				}
+			}
+			item.push(div);
+		}
+		item.push(totalDiv);
+		dateDivValues.push(item);
+	}
+	
+	for (let holding of uniqueHoldings) {
+		let item = {};
+		item.symbol = holding;
+		div = 0;
+		for (let tran of divTrans) {
+			if (holding == tran.symbol) {
+				div += parseFloat(tran.amount);
+			}
+		}
+		item.dividends = div;
+		holdingDivValues.push(item);
+	}
+	
+	drawChartDividends(accounts, dateDivValues);
+	updateHoldingDividends(holdingDivValues);
+}
+
+function updateHoldingDividends(holdingDivValues) {
+	let tableHeader = getHeaderFields();
+	let iCol = indexOfArray(tableHeader, "name", "dividends");
+	for (i = 0; i < holdingDivValues.length; i++) {
+		let row = document.getElementById("trid_" + holdingDivValues[i].symbol);
+		if (row) {
+			row.setAttribute("dividends", holdingDivValues[i].dividends);
+			row.cells[iCol].innerText = holdingDivValues[i].dividends.toLocaleString('en-US',{style: 'currency', currency: 'USD',});
+		}
+	}	
 }
