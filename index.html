@@ -123,22 +123,22 @@
 			<table id="account-history-table" name="account-history-table" class="watchlist-table">
 				<thead>
 					<tr>
-						<th onclick="loaderOn(tblSort,'account-history-table',0,'text');" class="min-width-12">account activity</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',0,'text');" class="min-width-12">account activity</th>
 						<th>
-							<span onclick="loaderOn(tblSort,'account-history-table',1,'text');">date </span>
-							<select id="activity_range" class="activity-input" onchange="setAccountActivity();"><option value="all">All</option><option value="current_week">Current Week</option><option value="current_month">Current Month</option><option value="last_month">Last Month</option></select>
+							<span onclick="loaderOn(sortTable,'account-history-table',1,'text');">date </span>
+							<select id="activity_range" class="activity-input" onchange="setAccountActivity();"><option value="all">All</option><option value="current_week">Current Week</option><option value="current_month">Current Month</option><option value="last_month">Last Month</option><option value="last_2months">Last 2 Months</option></select>
 						</th>
 						<th>
-							<span onclick="loaderOn(tblSort,'account-history-table',2,'text');">activity </span>
+							<span onclick="loaderOn(sortTable,'account-history-table',2,'text');">activity </span>
 							<select id="activity_transactions" class="activity-input" onchange="setAccountActivity();"><option value="all">All</option><option value="bookkeeping">Bookkeeping</option><option value="trade">Trade</option></select>
 						</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',3,'number');">qty</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',4,'text');">sym</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',5,'text');">description</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',6,'dollar');">price</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',7,'dollar');">commission</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',8,'dollar');">fees</th>
-						<th onclick="loaderOn(tblSort,'account-history-table',9,'dollar');">amount</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',3,'number');">qty</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',4,'text');">sym</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',5,'text');">description</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',6,'dollar');">price</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',7,'dollar');">commission</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',8,'dollar');">fees</th>
+						<th onclick="loaderOn(sortTable,'account-history-table',9,'dollar');">amount</th>
 					</tr>
 				</thead>
 				<tbody></tbody>

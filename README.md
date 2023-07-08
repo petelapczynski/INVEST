@@ -18,4 +18,4 @@ Three local data files are used. Alerts and Comments can be added/removed from t
  
 * alerts.csv – data used for the alert/notification system. This does not integrate with any alerts actually setup in Ally Invest.
 * comments.csv – data used for user added comments for any of your holdings. I find it helpful just to remind myself if “I like this stonk”
-* extra_accounts.csv – data for account holdings of non Ally Invest accounts that you’d like to manually integrate into the Dashboard. To fully implement, you’d also need to add the accounts to the “SETUP_EXTRA_ACCOUNTS” section in the main “javascript.js” file.
+* extra_accounts.csv – data for account holdings of non Ally Invest accounts that you’d like to manually integrate into the Dashboard.

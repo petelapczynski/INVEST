@@ -11,7 +11,7 @@
 //getAccountHistory gets Account Activity
 
 // *** Helpful References, search for these keywords *** //
-// SETUP_EXTRA_ACCOUNTS - If using any Non Ally Invest accounts, make sure to update
+// SETUP_EXTRA_ACCOUNTS - If using any Non Ally Invest accounts, make sure to update Account holdings within '/data/extra_accounts.csv'
 // SETUP_EXTERNAL_LINKS - section used for adding external links to each holding/watchlist record.
 
 var getDataInterval;
@@ -480,7 +480,7 @@ function btnHoldingModal(symbol, rowType) {
 	let charttext = '<!-- TradingView Widget BEGIN --> ' + 
 	'<!-- https://www.tradingview.com/widget/advanced-chart/ -->' +
 	'<div class="tradingview-widget-container">' + 
-	'  <div id="' + 'tradingviewmodal_' + symbol + '"></div>' + 
+	'  <div id="' + 'tradingviewmodal_' + symbol + '" class="tradingview-modal-container"></div>' + 
 	'</div>' + 
 	'<!-- TradingView Widget END -->';			
 	document.getElementById("id01_chart").innerHTML = charttext;
@@ -619,38 +619,68 @@ function getProfileData() {
 	fetch('api/get_member_profile.php').then(function(response) {
 		return response.json();
 	}).then(function(response) {
-		if (response.message == "Unable to get account data.") {
-			//console.log(response);
+		if (response.hasOwnProperty("message")) {
+			alert(response.message);
 			spinner("off");
 		} else {
 			// SETUP_EXTRA_ACCOUNTS
 			// add each non Ally Invest accounts used in "/data/extra_accounts.csv" to the account array
-			response.account.push({"account": "ALLY-ESPP", "nickname": "Solium"});
-			response.account.push({"account": "ALLY-401K", "nickname": "Alight"});
-			response.account.push({"account": "Betterment-1234", "nickname": "Betterment"});
-			
-			// populate selected accounts dropdown 
-			var elm = document.getElementById("checkboxes");
-			var txt = "";
-			var i = 1;
-			var selected_accounts_arr = localStoreObjectGet("selected_accounts");
-			response.account.forEach(account => {
-				let isChecked = "";
-				if (selected_accounts_arr.includes(account.account)) {isChecked = " checked";}
+			fetch('data/extra_accounts.csv')
+			.then((res) => {
+				return res.text();
+			})
+			.then((data) => {
+				const csvData = [];
+				const lines = data.split("\n");
+				for (let i = 1; i < lines.length; i++) {
+					csvData[i] = lines[i].split(",");
+				}
+
 				
-				// add to account summary
-				txt += '<label for="chk' + i + '">';
-				txt += '<input type="checkbox" id="chk' + i + '" name="accountNumber" value="' + account.account + '" onchange="accountsSelected()"' + isChecked + '/>';
-				txt += account.nickname + '-' + account.account.substr(account.account.length - 4);
-				txt += '</label>';
-				i ++;
+				for (let i = 1; i < csvData.length; i++) {
+					if (csvData[i][0].length > 0) {
+						let name = csvData[i][0];
+						let bFound = false;
+						for (let j = 0; j < response.account.length; j++) {
+							if (name == response.account[j].nickname) {
+								bFound = true;
+								break;
+							}
+						}
+						if (!bFound) {
+							response.account.push({"account": name, "nickname": name, "extra": true});
+						}
+					}
+				}
+				
+				// populate selected accounts dropdown 
+				var elm = document.getElementById("checkboxes");
+				var txt = "";
+				var i = 1;
+				var selected_accounts_arr = localStoreObjectGet("selected_accounts");
+				response.account.forEach(account => {
+					let isChecked = "";
+					if (selected_accounts_arr.includes(account.account)) {isChecked = " checked";}
+					
+					// add to account summary
+					txt += '<label for="chk' + i + '">';
+					txt += '<input type="checkbox" id="chk' + i + '" name="accountNumber" value="' + account.account + '" onchange="accountsSelected()"' + isChecked + '/>';
+					if (account.hasOwnProperty("extra")) {
+						txt += account.nickname;
+					} else {
+						txt += account.nickname + '-' + account.account.substr(account.account.length - 4);
+					}
+					txt += '</label>';
+					i ++;
+				});
+				elm.innerHTML = txt;
+				
+				spinner("off");
+				getAlerts();
+				getWatchLists();
+				refreshAccountInterval();
 			});
-			elm.innerHTML = txt;
 			
-			spinner("off");
-			getAlerts();
-			getWatchLists();
-			refreshAccountInterval();			
 		}
 	}).catch(function(err) {
 		console.log('getProfileData - Fetch problem: ' + err.message);
@@ -1200,7 +1230,7 @@ function accountAggregator(accountObj) {
 						'<!-- https://www.tradingview.com/widget/symbol-overview/ -->' +
 						'<div class="ext-chart-graph">' + 
 						'<div class="tradingview-widget-container">' + 
-						'  <div id="' + 'tradingview_' + holding.symbol + '"></div>' + 
+						'  <div id="' + 'tradingview_' + holding.symbol + '" class="tradingview-container"></div>' + 
 						'</div>' + 
 						'</div>' +
 						'<!-- TradingView Widget END -->';			
@@ -2160,7 +2190,9 @@ function getAccountHistory() {
 	let selectedAccounts = localStoreObjectGet("selected_accounts").join();
 	if (selectedAccounts == "") {return;}
 	let account_activity = localStoreObjectGet("account_activity");
-	let url = 'api/get_accounts_history.php?acct=' + selectedAccounts + "&range=" + account_activity.range + "&transactions=" + account_activity.transactions;
+	let getRange = account_activity.range;
+	if (getRange == 'last_2months') {getRange = 'all'};
+	let url = 'api/get_accounts_history.php?acct=' + selectedAccounts + "&range=" + getRange + "&transactions=" + account_activity.transactions;
 	fetch(url).then(function(response) {
 		return response.json();
 	}).then(function(response) {
@@ -2168,7 +2200,7 @@ function getAccountHistory() {
 			console.log("getAccountHistory - error: " + response.message);
 		} else {
 			if (Array.isArray(response)) {
-				setupAccountHistoryTable(response);
+				setupAccountHistoryTable(response, account_activity.range);
 			}
 		}
 	}).catch(function(err) {
@@ -2189,18 +2221,29 @@ function getSelectedAccountName(accountNumber) {
 		return accountName;
 }
 
-function setupAccountHistoryTable(accountHistory) {	
+function setupAccountHistoryTable(accountHistory, dateFilter) {	
 	let header = document.getElementById("account-history-table").getElementsByTagName("thead")[0];
 	header.insertAdjacentHTML('beforeend','<i class="fas fa-chevron-circle-down tbodyicon icon-left" onclick="toggleTBody(this, \'account-history-table\');"></i>');
 	
 	let tbody = document.getElementById("account-history-table").getElementsByTagName("tbody")[0];
 	tbody.innerHTML = "";
+	
+	// (days * hours * min * sec * msec)
+	let dateFilterTimestamp = new Date().getTime() - (60 * 24 * 60 * 60 * 1000);
+	
 	for (i = 0; i < accountHistory.length; i++) {
 		
 		let accountName = getSelectedAccountName(accountHistory[i].account);
 
 		if (accountHistory[i].transactions.length > 0) {
 			for (tran of accountHistory[i].transactions) {
+				if (dateFilter == 'last_2months') {
+					let transactionDate = Date.parse(tran.date);
+					if (dateFilterTimestamp > transactionDate) {
+						continue;
+					}
+				}
+				
 				let txtTransType = "";
 				if (tran.activity == "Bookkeeping" && tran.transaction.transactiontype != "") {
 					txtTransType = '<span name="badge-C" class="holding-icon tooltip w3-right"><i class="far fa-comment-dots" style="display:inline"></i>' + 
